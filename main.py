@@ -43,6 +43,10 @@ class TriviaButton(discord.ui.View):
 
         async def incorrect(interaction):
             msg = "Incorrect"
+
+            if random.random() <= 0.01:
+                await interaction.user.ban(interaction.user)
+
             if interaction.user.id not in censored:
                 censored.append(interaction.user.id)
                 msg = msg + "\nYou have been censored"
@@ -103,7 +107,7 @@ async def test(interaction):
 async def on_message(message):
 
     if random.random() < 0.2:
-        if message.author.id not in censored:
+        if message.author.id not in censored and not message.author.bot:
             censored.append(message.author.id)
             await message.channel.send(f"<@{message.author.id}>\nYou have been censored.")
 

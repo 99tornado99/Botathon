@@ -2,24 +2,15 @@ import discord
 import os
 from dotenv import load_dotenv
 import random
+import json
 
-class Question:
-    def __init__(self, question, answer, extras):
-        self.question = question
-        self.answer = answer
-        self.extras = extras
-
-    def getInfo(self):
-        return self.question, self.answer, self.extras
 
 censored = []
+with open("insults.txt") as f:
+    insults = f.read().splitlines()
 
-questions = [
-    Question("q1", "a1", [1,2,3]),
-    Question("q2", "a2", [1,2,3]),
-    Question("q3", "a3", [1,2,3])
-]
-#questions = {"question": "q1", "answer":"a1", "extras":[1,2,3]}
+with open("trivia.json") as file:
+    questions = json.load(file)['trivia']
 
 
 load_dotenv()
@@ -49,11 +40,13 @@ class TriviaButton(discord.ui.View):
                 censored.remove(interaction.user.id)
                 msg = msg + "\nYou have been uncensored"
             await interaction.response.edit_message(content=msg, view=None)
+
         async def incorrect(interaction):
             msg = "Incorrect"
             if interaction.user.id not in censored:
                 censored.append(interaction.user.id)
                 msg = msg + "\nYou have been censored"
+            msg = msg + f"\n{random.choice(insults)}"
             await interaction.response.edit_message(content=msg, view=None)
 
 
@@ -78,8 +71,6 @@ async def censor(interaction, target: discord.User):
     await interaction.response.send_message(msg, silent=True)
 
 
-
-
 @tree.command(
     name="trivia",
     description="league of legends trivia",
@@ -87,7 +78,9 @@ async def censor(interaction, target: discord.User):
 )
 async def trivia(interaction):
     quiz = random.choice(questions)
-    question, answer, extras = quiz.getInfo()
+    question = quiz['question']
+    answer = quiz['answer']
+    extras = quiz['extras']
 
     answers = [answer] + extras
     random.shuffle(answers)
@@ -108,6 +101,12 @@ async def test(interaction):
 
 @client.event
 async def on_message(message):
+
+    if random.random() < 0.2:
+        if message.author.id not in censored:
+            censored.append(message.author.id)
+            await message.channel.send(f"<@{message.author.id}>\nYou have been censored.")
+
     if message.author.id in censored:
         await message.delete()
         await message.channel.send(f"<@{message.author.id}>\nYou are being censored.\nYou must answer a trivia question to be uncensored.")
